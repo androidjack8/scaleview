@@ -1,4 +1,4 @@
-# scaleview
+# scaleview 刻度尺选择器
 ## 效果
 <img src="/preview/preview.jpg">
 ## 使用方法
@@ -12,3 +12,4 @@
 #### scaleView:scaleMinNumber: 刻度尺最小值
 #### scaleView:scaleUnit: 刻度尺单位
 #### scaleView:spaceUnit: 刻度尺单位间隔
+#### scaleView.setMoveScaleListener() 实现这个接口监听结果
