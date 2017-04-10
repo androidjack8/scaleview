@@ -2,7 +2,7 @@
 ## 效果
 <img src="/preview/preview.jpg">
 ## 使用方法
-<img src="/preview/use.jpg">
+<img src="/preview/use.png">
  
 #### scaleView:currentSelectColor:选中后结果颜色
 #### scaleView:indicatorColor：指示线颜色
