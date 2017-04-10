@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:scaleView="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.yhongm.scaleview.MainActivity">
+
+    <com.yhongm.scale_view_core.ScaleView
+        android:id="@+id/scale_view"
+        android:layout_width="200dp"
+        android:layout_height="70dp"
+        android:layout_centerInParent="true"
+        scaleView:currentSelectColor="#999999"
+        scaleView:indicatorColor="#ff9933"
+        scaleView:scaleTextColor="#666666"
+        scaleView:scaleLineColor="#666666"
+        scaleView:scaleMaxLength="100"
+        scaleView:scaleMinNumber="150"
+        scaleView:scaleUnit="身高"
+        scaleView:spaceUnit="5"></com.yhongm.scale_view_core.ScaleView>
+
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/scale_view"
+        android:layout_centerHorizontal="true" />
+</RelativeLayout>
