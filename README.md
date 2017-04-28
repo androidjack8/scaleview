@@ -1,6 +1,7 @@
 # scaleview 刻度尺选择器
-## 效果
+## 预览
 <img src="/preview/demo.gif">
+
 ## 使用方法
 <img src="/preview/use.png">
  
