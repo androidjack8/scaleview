@@ -4,8 +4,10 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.LinearGradient;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.Shader;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -17,17 +19,18 @@ public class ScaleView extends View {
     private int scaleMaxLength = 100;//刻度尺的长度
     private int scaleMinNum = 150;//刻度尺的最小值
     private int eachScalePix = 15;//每个刻度值的像素
-    private int defaultValue;
-    private int mMoveX, lastMoveX = 0;
+    private int mSlidingMoveX = 0;//滑动的差值
+    private int totalX = 0;//滑动总距离
     private boolean isDrawScaleText;//是否画刻度
     private int mDownX;
-    private int lastCurrentMoveX;
     private int mCenterY = 0;
     private int mCenterX;
     private Paint mCurrentSelectValuePaint;//当前值画笔
     private Paint mIndicatorPaint;//指示器刻度值画笔
     private int spaceUnit = 5;//单位间隔
     private String currentScaleUnit = "";
+    private int mHeight;
+    private int mWidth;
 
     public ScaleView(Context context) {
         this(context, null);
@@ -36,6 +39,7 @@ public class ScaleView extends View {
     public ScaleView(Context context, AttributeSet attrs) {
         super(context, attrs);
         this.mContext = context;
+        setClickable(true);
         init(attrs);
     }
 
@@ -116,45 +120,41 @@ public class ScaleView extends View {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-        int widthMode = MeasureSpec.getMode(widthMeasureSpec);
-        int widthSize = MeasureSpec.getSize(widthMeasureSpec);
-        int heightMode = MeasureSpec.getMode(heightMeasureSpec);
-        int heightSize = MeasureSpec.getSize(heightMeasureSpec);
-        int widthValue = 0;
-        int heightValue = 0;
-        if (widthMode == MeasureSpec.AT_MOST) {
-            defaultValue = Integer.MAX_VALUE;
 
-            widthValue = Math.min(widthSize, defaultValue);
-        } else if (widthMode == MeasureSpec.EXACTLY) {
-            widthValue = widthSize;
-        }
-        if (heightMode == MeasureSpec.AT_MOST) {
-            defaultValue = 120;
-            heightValue = Math.min(heightSize, defaultValue);
-        } else if (widthMode == MeasureSpec.EXACTLY) {
-            heightValue = heightSize;
-        }
-
-        setMeasuredDimension(widthValue, heightValue);
-
-    }
-
-    @Override
-    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-        super.onSizeChanged(w, h, oldw, oldh);
-        initStart();
+        setMeasuredDimension(widthMeasureSpec, heightMeasureSpec);
+        mWidth = getMeasuredWidth();
+        mHeight = getMeasuredHeight();
+        mCenterY = getMeasuredHeight() / 2;
+        mCenterX = getMeasuredWidth() / 2;
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
-        int currentValue = (-lastMoveX + mCenterX) / eachScalePix + scaleMinNum;
+        int currentValue = (-totalX + mCenterX) / eachScalePix + scaleMinNum;
         if (moveScaleListener != null) {
             moveScaleListener.currentVale(currentValue);
         }
         drawCurrentScale(canvas, currentValue);
 
         drawNum(canvas);
+
+        drawMask(canvas);
+    }
+
+    /**
+     * 画遮罩层
+     *
+     * @param canvas
+     */
+    private void drawMask(Canvas canvas) {
+        Paint mMaskPaint = new Paint();
+        mMaskPaint.setStrokeWidth(mHeight);
+        LinearGradient mLeftLinearGradient = new LinearGradient(0, mCenterY, 100, mCenterY, Color.parseColor("#01000000"), Color.parseColor("#11000000"), Shader.TileMode.CLAMP);
+        mMaskPaint.setShader(mLeftLinearGradient);
+        canvas.drawLine(0, mCenterY, mCenterX, mCenterY, mMaskPaint);
+        LinearGradient mRightLinearGradient = new LinearGradient(mWidth - 100, mCenterY, mWidth, mCenterY, Color.parseColor("#11000000"), Color.parseColor("#01000000"), Shader.TileMode.CLAMP);
+        mMaskPaint.setShader(mRightLinearGradient);
+        canvas.drawLine(mCenterX, mCenterY, mWidth, mCenterY, mMaskPaint);
     }
 
     /**
@@ -163,25 +163,24 @@ public class ScaleView extends View {
      * @param canvas
      */
     private void drawNum(Canvas canvas) {
-        for (int start = 0; start < mCenterX * 2; start++) {
+        for (int i = 0; i < mWidth; i++) {
             int top = mCenterY + 10;
-            if ((-lastMoveX + start) % (eachScalePix * spaceUnit) == 0) {
-                top = top + 20;
+            if ((-totalX + i) % (eachScalePix * spaceUnit) == 0) {
+                top = top + 30;
                 isDrawScaleText = true;
             } else {
                 isDrawScaleText = false;
             }
-            //    （-lastMoveX + start)：向左滑动值增加，数值增加，所以为负数
-            if ((-lastMoveX + start) % eachScalePix == 0) {
-                if ((-lastMoveX + start) >= 0 && (-lastMoveX + start) <= scaleMaxLength * eachScalePix) {
-                    canvas.drawLine(start, mCenterY, start, top, scaleLinePaint);
+            if ((-totalX + i) % eachScalePix == 0) {
+                if ((-totalX + i) >= 0 && (-totalX + i) <= scaleMaxLength * eachScalePix) {
+                    canvas.drawLine(i, mCenterY, i, top, scaleLinePaint);
                 }
 
             }
 
             if (isDrawScaleText) {
-                if ((-lastMoveX + start) >= 0 && (-lastMoveX + start) <= scaleMaxLength * eachScalePix)
-                    canvas.drawText((-lastMoveX + start) / eachScalePix + scaleMinNum + "", start, top + 20, scaleTextPaint);
+                if ((-totalX + i) >= 0 && (-totalX + i) <= scaleMaxLength * eachScalePix)
+                    canvas.drawText((-totalX + i) / eachScalePix + scaleMinNum + "", i, top + 20, scaleTextPaint);
             }
         }
     }
@@ -212,35 +211,30 @@ public class ScaleView extends View {
                 mDownX = (int) event.getX();
                 break;
             case MotionEvent.ACTION_MOVE:
-                mMoveX = (int) (event.getX() - mDownX);
-//                if (lastCurrentMoveX == mMoveX) {
-//                    return true;
-//                }
-                lastMoveX = lastMoveX + mMoveX;
-                if (mMoveX < 0) {
+                mSlidingMoveX = (int) (event.getX() - mDownX);//滑动距离
+                totalX = totalX + mSlidingMoveX;
+                if (mSlidingMoveX < 0) {
                     //向左滑动,刻度值增大
-                    if (-lastMoveX + mCenterX > scaleMaxLength * eachScalePix) {
+                    if (-totalX + mCenterX > scaleMaxLength * eachScalePix) {
                         //向左滑动如果刻度值大于最大值，则不能滑动了
-                        lastMoveX = lastMoveX - mMoveX;
-                        getParent().requestDisallowInterceptTouchEvent(false);
+                        totalX = totalX - mSlidingMoveX;
                         return true;
                     } else {
-                        getParent().requestDisallowInterceptTouchEvent(true);
+                        invalidate();
                     }
                 } else {
                     //向右滑动，刻度值减小
 //                    向右滑动刻度值小于最小值则不能滑动了
-                    if (lastMoveX - mCenterX > 0) {
-                        lastMoveX = lastMoveX - mMoveX;
-                        getParent().requestDisallowInterceptTouchEvent(true);
+                    if (totalX - mCenterX > 0) {
+                        totalX = totalX - mSlidingMoveX;
                         return true;
                     } else {
-                        getParent().requestDisallowInterceptTouchEvent(true);
+                        invalidate();
+
                     }
                 }
-                lastCurrentMoveX = mMoveX;
                 mDownX = (int) event.getX();
-                invalidate();
+
                 break;
             case MotionEvent.ACTION_UP:
                 break;
@@ -248,10 +242,6 @@ public class ScaleView extends View {
         return true;
     }
 
-    private void initStart() {
-        mCenterY = getHeight() / 2;
-        mCenterX = getWidth() / 2;
-    }
 
     private MoveScaleListener moveScaleListener;
 
